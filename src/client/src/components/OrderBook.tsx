@@ -26,7 +26,7 @@ function formatNum(s: string, decimals: number): string {
   const n = parseFloat(s);
   if (Number.isNaN(n)) return '—';
   if (n >= 1000) return n.toLocaleString('en', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  return Number(n.toFixed(decimals)).toString();
+  return n.toFixed(decimals);
 }
 
 function depthRows(
@@ -54,7 +54,7 @@ function depthRows(
           zIndex: 1,
         }}
       >
-        <span style={{ textAlign: 'right', color, fontFamily: MONO_FONT }}>{formatNum(price, 2)}</span>
+        <span style={{ textAlign: 'right', color, fontFamily: MONO_FONT }}>{formatNum(price, priceDecimals)}</span>
         <span style={{ textAlign: 'right', color: TEXT, fontFamily: MONO_FONT }}>{formatNum(amount, amountDecimals)}</span>
         <span style={{ textAlign: 'right', color: TEXT_MUTED, fontFamily: MONO_FONT }}>{formatNum(String(total), 2)}</span>
         {/* 深度条：卖盘从右往左，买盘从右往左（右侧对齐） */}
@@ -192,7 +192,7 @@ export function OrderBook({
             flexShrink: 0,
           }}
         >
-          {formatNum(lastPrice, 2)}
+          {formatNum(lastPrice, priceDecimals)}
         </div>
       )}
 

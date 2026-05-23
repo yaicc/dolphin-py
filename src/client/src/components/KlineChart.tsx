@@ -57,13 +57,21 @@ const CHART_COLORS = {
 
 interface KlineChartProps {
   data: KlineBar[];
+  priceDecimals?: number;
   height?: number;
 }
 
-export function KlineChart({ data, height }: KlineChartProps) {
+function getMinMoveByPrecision(precision: number): number {
+  return precision <= 0 ? 1 : 1 / 10 ** precision;
+}
+
+export function KlineChart({ data, priceDecimals = 2, height }: KlineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleRef = useRef<{ setData: (data: CandlestickData[]) => void } | null>(null);
+  const candleRef = useRef<{
+    setData: (data: CandlestickData[]) => void;
+    applyOptions: (options: { priceFormat: { type: 'price'; precision: number; minMove: number } }) => void;
+  } | null>(null);
   const volumeRef = useRef<{ setData: (data: HistogramData[]) => void } | null>(null);
 
   useEffect(() => {
@@ -107,6 +115,11 @@ export function KlineChart({ data, height }: KlineChartProps) {
       borderDownColor: CHART_COLORS.downBorder,
       wickUpColor: CHART_COLORS.up,
       wickDownColor: CHART_COLORS.down,
+      priceFormat: {
+        type: 'price',
+        precision: priceDecimals,
+        minMove: getMinMoveByPrecision(priceDecimals),
+      },
     });
 
     const volumeSeries = chart.addHistogramSeries({
@@ -146,7 +159,7 @@ export function KlineChart({ data, height }: KlineChartProps) {
       candleRef.current = null;
       volumeRef.current = null;
     };
-  }, [height]);
+  }, [height, priceDecimals]);
 
   useEffect(() => {
     if (!candleRef.current || !volumeRef.current || !data.length) return;
@@ -156,6 +169,17 @@ export function KlineChart({ data, height }: KlineChartProps) {
     volumeRef.current.setData(volumeData);
     chartRef.current?.timeScale().fitContent();
   }, [data]);
+
+  useEffect(() => {
+    if (!candleRef.current) return;
+    candleRef.current.applyOptions({
+      priceFormat: {
+        type: 'price',
+        precision: priceDecimals,
+        minMove: getMinMoveByPrecision(priceDecimals),
+      },
+    });
+  }, [priceDecimals]);
 
   return (
     <div

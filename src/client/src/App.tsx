@@ -23,6 +23,22 @@ function setSymbolInUrl(symbol: SymbolType): void {
   window.history.replaceState(null, '', url.pathname + url.search);
 }
 
+function getDecimals(value: string | null | undefined): number {
+  if (!value) return 0;
+  const m = value.match(/\.(\d+)/);
+  return m ? m[1].length : 0;
+}
+
+function getMaxLevelDecimals(levels: DepthLevel[]): { price: number; qty: number } {
+  let price = 0;
+  let qty = 0;
+  for (const [p, q] of levels) {
+    price = Math.max(price, getDecimals(p));
+    qty = Math.max(qty, getDecimals(q));
+  }
+  return { price, qty };
+}
+
 const INTERVALS = ['1m', '1h', '1d'] as const;
 const KLINE_LIMIT = 250;
 
@@ -120,6 +136,8 @@ export default function App() {
   const [klines, setKlines] = useState<KlineBar[]>([]);
   const [depth, setDepth] = useState<{ bids: DepthLevel[]; asks: DepthLevel[] }>({ bids: [], asks: [] });
   const [tickerPrice, setTickerPrice] = useState<string | null>(null);
+  const [maxPriceDecimals, setMaxPriceDecimals] = useState(0);
+  const [maxQtyDecimals, setMaxQtyDecimals] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,6 +148,8 @@ export default function App() {
     setLoading(true);
     setError(null);
     setTickerPrice(null);
+    setMaxPriceDecimals(0);
+    setMaxQtyDecimals(0);
     setKlines([]);
     setDepth({ bids: [], asks: [] });
     Promise.all([
@@ -139,7 +159,13 @@ export default function App() {
       .then(([k, d]) => {
         if (cancelled) return;
         setKlines(k);
-        setDepth({ bids: sortBids(d.bids ?? []), asks: sortAsks(d.asks ?? []) });
+        const bids = sortBids(d.bids ?? []);
+        const asks = sortAsks(d.asks ?? []);
+        setDepth({ bids, asks });
+        const bidDecimals = getMaxLevelDecimals(bids);
+        const askDecimals = getMaxLevelDecimals(asks);
+        setMaxPriceDecimals((prev) => Math.max(prev, bidDecimals.price, askDecimals.price));
+        setMaxQtyDecimals((prev) => Math.max(prev, bidDecimals.qty, askDecimals.qty));
       })
       .catch((e) => {
         if (!cancelled) setError(e?.message ?? '请求失败');
@@ -160,11 +186,18 @@ export default function App() {
   useEffect(() => {
     if (wsDepth.bids.length > 0 || wsDepth.asks.length > 0) {
       setDepth({ bids: wsDepth.bids, asks: wsDepth.asks });
+      const bidDecimals = getMaxLevelDecimals(wsDepth.bids);
+      const askDecimals = getMaxLevelDecimals(wsDepth.asks);
+      setMaxPriceDecimals((prev) => Math.max(prev, bidDecimals.price, askDecimals.price));
+      setMaxQtyDecimals((prev) => Math.max(prev, bidDecimals.qty, askDecimals.qty));
     }
   }, [wsDepth]);
 
   useEffect(() => {
-    if (lastTrade?.price) setTickerPrice(lastTrade.price);
+    if (!lastTrade) return;
+    if (lastTrade.price) setTickerPrice(lastTrade.price);
+    setMaxPriceDecimals((prev) => Math.max(prev, getDecimals(lastTrade.price)));
+    setMaxQtyDecimals((prev) => Math.max(prev, getDecimals(lastTrade.qty)));
   }, [lastTrade]);
 
   // 根据成交推送实时更新 K 线：命中已有 bar 则更新 h/l/c/v，否则若进入新周期则追加新 bar
@@ -253,7 +286,7 @@ export default function App() {
             <div style={{ padding: 40, textAlign: 'center', fontSize: 13, color: '#848e9c' }}>加载 K 线中…</div>
           ) : (
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <KlineChart data={klines.slice(-KLINE_LIMIT)} />
+              <KlineChart data={klines.slice(-KLINE_LIMIT)} priceDecimals={maxPriceDecimals} />
             </div>
           )}
         </div>
@@ -276,8 +309,8 @@ export default function App() {
               bids={depth.bids}
               asks={depth.asks}
               lastPrice={displayPrice}
-              priceDecimals={2}
-              amountDecimals={4}
+              priceDecimals={maxPriceDecimals}
+              amountDecimals={maxQtyDecimals}
               style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
             />
           </div>
@@ -285,8 +318,8 @@ export default function App() {
             <div style={{ fontSize: 12, color: '#ffffff', marginBottom: 6, flexShrink: 0, fontWeight: 500 }}>最新成交</div>
             <LatestTrades
               trades={recentTrades}
-              priceDecimals={2}
-              amountDecimals={4}
+              priceDecimals={maxPriceDecimals}
+              amountDecimals={maxQtyDecimals}
               maxRows={20}
               style={{ flex: 1, minHeight: 0 }}
             />

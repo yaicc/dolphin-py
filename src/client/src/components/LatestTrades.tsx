@@ -11,7 +11,7 @@ function formatNum(s: string, decimals: number): string {
   const n = parseFloat(s);
   if (Number.isNaN(n)) return '—';
   if (n >= 1000) return n.toLocaleString('en', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  return Number(n.toFixed(decimals)).toString();
+  return n.toFixed(decimals);
 }
 
 /** 后端为 UTC 时间戳(ms 或 s)，格式化为本地时间 HH:mm:ss */
