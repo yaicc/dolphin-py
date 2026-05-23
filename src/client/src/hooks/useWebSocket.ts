@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DepthLevel } from '../types/api';
 import { sortBids, sortAsks } from '../utils/orderBook';
 
-const WS_BASE = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//3.1.221.68:8765/spot`;
+const WS_BASE = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//new-market-maker.dev.decodebackoffice.com/dolphin/spot`;
 
 export interface DepthUpdate {
   e: 'depthUpdate';

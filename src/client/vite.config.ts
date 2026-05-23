@@ -6,8 +6,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://3.1.221.68:8763', changeOrigin: true },
-      '/fapi': { target: 'http://3.1.221.68:8763', changeOrigin: true },
+      '/api': { target: 'https://new-market-maker.dev.decodebackoffice.com/dolphin', changeOrigin: true },
+      '/fapi': { target: 'https://new-market-maker.dev.decodebackoffice.com/dolphin', changeOrigin: true },
     },
   },
 });
