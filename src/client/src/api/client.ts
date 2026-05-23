@@ -1,4 +1,11 @@
-import type { ApiResponse, DepthData, KlineBar, TickerPrice } from '../types/api';
+import type {
+  ApiResponse,
+  DepthData,
+  KlineBar,
+  NewOrderRequest,
+  NewOrderResult,
+  TickerPrice,
+} from '../types/api';
 
 const BASE = ''; // 使用 Vite proxy 转发到后端
 
@@ -9,6 +16,19 @@ async function request<T>(url: string, params?: Record<string, string | number>)
       )).toString()
     : '';
   const res = await fetch(`${BASE}${url}${search}`);
+  const json: ApiResponse<T> = await res.json();
+  if (json.code !== 200) {
+    throw new Error(json.msg ?? `API error ${json.code}`);
+  }
+  return json.data as T;
+}
+
+async function requestPost<T>(url: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`${BASE}${url}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   const json: ApiResponse<T> = await res.json();
   if (json.code !== 200) {
     throw new Error(json.msg ?? `API error ${json.code}`);
@@ -33,4 +53,9 @@ export function fetchKlines(
   limit: number = 300
 ): Promise<KlineBar[]> {
   return request<KlineBar[]>('/dolphin/api/v3/klines', { symbol, interval, limit });
+}
+
+/** 下单 */
+export function createOrder(payload: NewOrderRequest): Promise<NewOrderResult> {
+  return requestPost<NewOrderResult>('/dolphin/api/v3/order', payload as unknown as Record<string, unknown>);
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchDepth, fetchKlines, fetchTickerPrice } from './api/client';
 import { KlineChart } from './components/KlineChart';
 import { LatestTrades } from './components/LatestTrades';
+import { OrderEntry } from './components/OrderEntry';
 import { OrderBook } from './components/OrderBook';
 import { useWebSocket } from './hooks/useWebSocket';
 import type { DepthLevel, KlineBar } from './types/api';
@@ -112,7 +113,7 @@ const HEADER_STYLE: React.CSSProperties = {
 
 const LAYOUT_STYLE: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1fr 320px',
+  gridTemplateColumns: '1fr 320px 280px',
   gap: 0,
   flex: 1,
   minHeight: 0,
@@ -367,6 +368,23 @@ export default function App() {
               style={{ flex: 1, minHeight: 0 }}
             />
           </div>
+        </div>
+        <div
+          style={{
+            padding: '12px 16px',
+            minWidth: 240,
+            height: '100%',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#0b0e11',
+            borderLeft: '1px solid #3d4552',
+          }}
+        >
+          <div style={{ fontSize: 12, color: '#ffffff', marginBottom: 6, flexShrink: 0, fontWeight: 500 }}>
+            下单
+          </div>
+          <OrderEntry symbol={symbol} pricePlaceholder={displayPrice !== '—' ? String(displayPrice) : ''} />
         </div>
       </div>
     </div>

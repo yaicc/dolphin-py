@@ -27,6 +27,31 @@ export interface TickerPrice {
   quantity: string;
 }
 
+export type OrderSide = 'BUY' | 'SELL';
+export type OrderType = 'LIMIT' | 'MARKET';
+
+export interface NewOrderRequest {
+  symbol: string;
+  side: OrderSide;
+  type: OrderType;
+  quantity: string;
+  price?: string;
+  client_order_id?: string;
+}
+
+export interface NewOrderResult {
+  symbol: string;
+  orderId: string | number;
+  clientOrderId: string;
+  transactTime: number;
+  price: string | number;
+  origQty: string | number;
+  executedQty: string | number;
+  status: string;
+  type: string;
+  side: string;
+}
+
 /** API 通用响应 */
 export interface ApiResponse<T> {
   code: number;
