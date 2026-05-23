@@ -18,7 +18,7 @@ async function request<T>(url: string, params?: Record<string, string | number>)
 
 /** 获取盘口深度 */
 export function fetchDepth(symbol: string, limit = 30): Promise<DepthData> {
-  return request<DepthData>('/api/v3/depth', { symbol, limit });
+  return request<DepthData>('/dolphin/api/v3/depth', { symbol, limit });
 }
 
 /** 获取最新价 */
