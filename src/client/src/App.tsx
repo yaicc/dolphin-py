@@ -9,6 +9,7 @@ import { sortBids, sortAsks } from './utils/orderBook';
 
 const SYMBOLS = ['90000001', '90000002', '90000024'] as const;
 type SymbolType = (typeof SYMBOLS)[number];
+const MAX_DECIMALS = 8;
 
 function getSymbolFromUrl(): SymbolType {
   const params = new URLSearchParams(location.search);
@@ -23,10 +24,34 @@ function setSymbolInUrl(symbol: SymbolType): void {
   window.history.replaceState(null, '', url.pathname + url.search);
 }
 
-function getDecimals(value: string | null | undefined): number {
-  if (!value) return 0;
-  const m = value.match(/\.(\d+)/);
+function normalizeNumericString(value: string | number | null | undefined): string {
+  if (value == null) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return '';
+  // 统一收敛精度，避免 0.30000000000000004 这类浮点噪声进入精度统计与展示
+  const fixed = n.toFixed(MAX_DECIMALS);
+  return fixed.replace(/\.?0+$/, '');
+}
+
+function getDecimals(value: string | number | null | undefined): number {
+  const s = normalizeNumericString(value);
+  if (!s) return 0;
+  const m = s.match(/\.(\d+)/);
   return m ? m[1].length : 0;
+}
+
+function addDecimal(a: string, b: string): string {
+  const sa = normalizeNumericString(a);
+  const sb = normalizeNumericString(b);
+  const na = Number(sa || '0');
+  const nb = Number(sb || '0');
+  if (!Number.isFinite(na) || !Number.isFinite(nb)) return '0';
+  const decimals = Math.max(getDecimals(sa), getDecimals(sb));
+  const scale = 10 ** Math.min(MAX_DECIMALS, decimals);
+  const sum = (Math.round(na * scale) + Math.round(nb * scale)) / scale;
+  return sum.toFixed(Math.min(MAX_DECIMALS, decimals)).replace(/\.?0+$/, '') || '0';
 }
 
 function getMaxLevelDecimals(levels: DepthLevel[]): { price: number; qty: number } {
@@ -37,6 +62,20 @@ function getMaxLevelDecimals(levels: DepthLevel[]): { price: number; qty: number
     qty = Math.max(qty, getDecimals(q));
   }
   return { price, qty };
+}
+
+function getMaxKlinePriceDecimals(bars: KlineBar[]): number {
+  let maxDecimals = 0;
+  for (const b of bars) {
+    maxDecimals = Math.max(
+      maxDecimals,
+      getDecimals(b.o),
+      getDecimals(b.h),
+      getDecimals(b.l),
+      getDecimals(b.c)
+    );
+  }
+  return maxDecimals;
 }
 
 const INTERVALS = ['1m', '1h', '1d'] as const;
@@ -159,6 +198,7 @@ export default function App() {
       .then(([k, d]) => {
         if (cancelled) return;
         setKlines(k);
+        setMaxPriceDecimals((prev) => Math.max(prev, getMaxKlinePriceDecimals(k)));
         const bids = sortBids(d.bids ?? []);
         const asks = sortAsks(d.asks ?? []);
         setDepth({ bids, asks });
@@ -175,7 +215,10 @@ export default function App() {
       });
     fetchTickerPrice(symbol)
       .then((t) => {
-        if (!cancelled) setTickerPrice(t.price);
+        if (!cancelled) {
+          setTickerPrice(t.price);
+          setMaxPriceDecimals((prev) => Math.max(prev, getDecimals(t.price)));
+        }
       })
       .catch(() => {});
     return () => {
@@ -212,11 +255,11 @@ export default function App() {
       const idx = prev.findIndex((b) => t >= b.ot && t < b.ot + intervalMs);
       if (idx !== -1) {
         const bar = prev[idx];
-        const newH = String(Math.max(parseFloat(bar.h), price));
-        const newL = String(Math.min(parseFloat(bar.l), price));
-        const newV = String(parseFloat(bar.v) + qty);
+        const newH = normalizeNumericString(Math.max(parseFloat(bar.h), price));
+        const newL = normalizeNumericString(Math.min(parseFloat(bar.l), price));
+        const newV = addDecimal(bar.v, lastTrade.qty);
         const next = [...prev];
-        next[idx] = { ...bar, h: newH, l: newL, c: lastTrade.price, v: newV };
+        next[idx] = { ...bar, h: newH || bar.h, l: newL || bar.l, c: normalizeNumericString(lastTrade.price) || lastTrade.price, v: newV };
         return next;
       }
       const lastBar = prev[prev.length - 1];
@@ -224,11 +267,11 @@ export default function App() {
       const newOt = Math.floor(t / intervalMs) * intervalMs;
       const newBar: KlineBar = {
         ot: newOt,
-        o: lastTrade.price,
-        h: lastTrade.price,
-        l: lastTrade.price,
-        c: lastTrade.price,
-        v: lastTrade.qty,
+        o: normalizeNumericString(lastTrade.price) || lastTrade.price,
+        h: normalizeNumericString(lastTrade.price) || lastTrade.price,
+        l: normalizeNumericString(lastTrade.price) || lastTrade.price,
+        c: normalizeNumericString(lastTrade.price) || lastTrade.price,
+        v: normalizeNumericString(lastTrade.qty) || lastTrade.qty,
         ct: newOt + intervalMs - 1,
         a: '',
       };
