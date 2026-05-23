@@ -7,14 +7,14 @@ import { useWebSocket } from './hooks/useWebSocket';
 import type { DepthLevel, KlineBar } from './types/api';
 import { sortBids, sortAsks } from './utils/orderBook';
 
-const SYMBOLS = ['BTCUSDT', 'JPMUSDT', 'ETHUSDT'] as const;
+const SYMBOLS = ['90000001', '90000002', '90000024'] as const;
 type SymbolType = (typeof SYMBOLS)[number];
 
 function getSymbolFromUrl(): SymbolType {
   const params = new URLSearchParams(location.search);
   const s = params.get('symbol')?.toUpperCase();
   if (s && (SYMBOLS as readonly string[]).includes(s)) return s as SymbolType;
-  return 'BTCUSDT';
+  return '90000001';
 }
 
 function setSymbolInUrl(symbol: SymbolType): void {
