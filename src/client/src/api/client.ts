@@ -23,7 +23,7 @@ export function fetchDepth(symbol: string, limit = 30): Promise<DepthData> {
 
 /** 获取最新价 */
 export function fetchTickerPrice(symbol: string): Promise<TickerPrice> {
-  return request<TickerPrice>('/api/v3/ticker/price', { symbol });
+  return request<TickerPrice>('/dolphin/api/v3/ticker/price', { symbol });
 }
 
 /** 获取 K 线 */
@@ -32,5 +32,5 @@ export function fetchKlines(
   interval: string = '1m',
   limit: number = 300
 ): Promise<KlineBar[]> {
-  return request<KlineBar[]>('/api/v3/klines', { symbol, interval, limit });
+  return request<KlineBar[]>('/dolphin/api/v3/klines', { symbol, interval, limit });
 }
