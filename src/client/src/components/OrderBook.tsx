@@ -37,13 +37,13 @@ function depthRows(
   amountDecimals: number
 ) {
   let total = 0;
-  return levels.map(([price, amount]) => {
+  return levels.map(([price, amount], idx) => {
     total += parseFloat(price) * parseFloat(amount);
     const pct = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
     const color = side === 'bid' ? BID_COLOR : ASK_COLOR;
     return (
       <div
-        key={price}
+        key={`${side}-${price}-${idx}`}
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',

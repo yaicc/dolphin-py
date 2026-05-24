@@ -253,6 +253,7 @@ export default function App() {
     const qty = parseFloat(lastTrade.qty);
     if (Number.isNaN(price) || Number.isNaN(qty)) return;
     setKlines((prev) => {
+      if (!prev.length) return prev;
       const idx = prev.findIndex((b) => t >= b.ot && t < b.ot + intervalMs);
       if (idx !== -1) {
         const bar = prev[idx];
@@ -264,6 +265,7 @@ export default function App() {
         return next;
       }
       const lastBar = prev[prev.length - 1];
+      if (!lastBar) return prev;
       if (t < lastBar.ot + intervalMs) return prev;
       const newOt = Math.floor(t / intervalMs) * intervalMs;
       const newBar: KlineBar = {
